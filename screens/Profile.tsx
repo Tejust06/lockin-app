@@ -1,8 +1,18 @@
-import React, { useContext } from 'react';
-import { AppContext } from '../App';
+import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useUI } from '../contexts/UIContext';
 
 export default function Profile() {
-  const { user, theme, toggleTheme } = useContext(AppContext);
+  const { user } = useAuth();
+  const { theme, toggleTheme } = useUI();
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-lockin-bg">
+        <p className="text-lockin-secondary">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-lockin-bg p-6 pt-safe-top pb-safe-bottom">
@@ -50,6 +60,7 @@ export default function Profile() {
             <button
               onClick={toggleTheme}
               className="px-4 py-2 bg-lockin-subtle border border-lockin-border rounded-lg text-lockin-primary font-medium hover:bg-lockin-surface"
+              aria-label="Toggle dark mode"
             >
               {theme === 'dark' ? 'On' : 'Off'}
             </button>
