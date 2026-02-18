@@ -1,28 +1,37 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
-// Screens
-import Splash from './screens/Splash';
-import Auth from './screens/Auth';
-import Onboarding from './screens/Onboarding';
-import ProfileSetup from './screens/ProfileSetup';
-import Home from './screens/Home';
-import ContractWizard from './screens/ContractWizard';
-import BondAuth from './screens/BondAuth';
-import ActiveSession from './screens/ActiveSession';
-import Penalty from './screens/Penalty';
-import Analytics from './screens/Analytics';
-import Wallet from './screens/Wallet';
-import Network from './screens/Network';
-import Profile from './screens/Profile';
+// Context Providers
+import { AuthProvider } from './contexts/AuthContext';
+import { CommitmentProvider } from './contexts/CommitmentContext';
+import { UIProvider } from './contexts/UIContext';
+import { ProgressProvider } from './contexts/ProgressContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 
 // Components
 import { BottomTabBar } from './components/Navigation';
 import { TopNavbar } from './components/Navigation';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { GuestRoute } from './components/auth/GuestRoute';
+import { PageLoader } from './components/PageLoader';
+import { ToastContainer } from './components/ToastContainer';
 
-// Context
-export const AppContext = createContext<any>(null);
+// Lazy-loaded Screens
+const Splash = lazy(() => import('./screens/Splash'));
+const Auth = lazy(() => import('./screens/Auth'));
+const Onboarding = lazy(() => import('./screens/Onboarding'));
+const ProfileSetup = lazy(() => import('./screens/ProfileSetup'));
+const Home = lazy(() => import('./screens/Home'));
+const ContractWizard = lazy(() => import('./screens/ContractWizard'));
+const BondAuth = lazy(() => import('./screens/BondAuth'));
+const ActiveSession = lazy(() => import('./screens/ActiveSession'));
+const Penalty = lazy(() => import('./screens/Penalty'));
+const Analytics = lazy(() => import('./screens/Analytics'));
+const Wallet = lazy(() => import('./screens/Wallet'));
+const Network = lazy(() => import('./screens/Network'));
+const Profile = lazy(() => import('./screens/Profile'));
 
 const Layout = ({ children }: { children?: React.ReactNode }) => {
   const location = useLocation();
@@ -41,55 +50,165 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
 };
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [user, setUser] = useState({
-    username: 'trader_1',
-    drs: 1240,
-    tier: 'TIER 2',
-    integrity: 94,
-    streak: 12,
-    sessions: 42,
-    balance: 0,
-    capitalPreserved: 850.00,
-    feesIncurred: 50.00,
-  });
-
-  // Toggle Theme
-  useEffect(() => {
-    const html = document.documentElement;
-    if (theme === 'dark') {
-      html.classList.add('dark');
-    } else {
-      html.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-
   return (
-    <AppContext.Provider value={{ theme, toggleTheme, user, setUser }}>
-      <HashRouter>
-        <Layout>
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={<Splash />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/profile-setup" element={<ProfileSetup />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/contract" element={<ContractWizard />} />
-              <Route path="/bond-auth" element={<BondAuth />} />
-              <Route path="/active-session" element={<ActiveSession />} />
-              <Route path="/penalty" element={<Penalty />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/wallet" element={<Wallet />} />
-              <Route path="/network" element={<Network />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AnimatePresence>
-        </Layout>
-      </HashRouter>
-    </AppContext.Provider>
+    <ErrorBoundary>
+      <UIProvider>
+        <AuthProvider>
+          <CommitmentProvider>
+            <ProgressProvider>
+              <SubscriptionProvider>
+                <ToastContainer />
+                <HashRouter>
+                  <Layout>
+                    <Suspense fallback={<PageLoader />}>
+                      <AnimatePresence mode="wait">
+                        <Routes>
+                          {/* Public routes */}
+                          <Route 
+                            path="/" 
+                            element={
+                              <ErrorBoundary>
+                                <Splash />
+                              </ErrorBoundary>
+                            } 
+                          />
+                          
+                          {/* Guest-only routes (redirect to home if authenticated) */}
+                          <Route 
+                            path="/auth" 
+                            element={
+                              <ErrorBoundary>
+                                <GuestRoute>
+                                  <Auth />
+                                </GuestRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/onboarding" 
+                            element={
+                              <ErrorBoundary>
+                                <GuestRoute>
+                                  <Onboarding />
+                                </GuestRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/profile-setup" 
+                            element={
+                              <ErrorBoundary>
+                                <GuestRoute>
+                                  <ProfileSetup />
+                                </GuestRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          
+                          {/* Protected routes (require authentication) */}
+                          <Route 
+                            path="/home" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <Home />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/contract" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <ContractWizard />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/bond-auth" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <BondAuth />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/active-session" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <ActiveSession />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/penalty" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <Penalty />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/analytics" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <Analytics />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/wallet" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <Wallet />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/network" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <Network />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          <Route 
+                            path="/profile" 
+                            element={
+                              <ErrorBoundary>
+                                <ProtectedRoute>
+                                  <Profile />
+                                </ProtectedRoute>
+                              </ErrorBoundary>
+                            } 
+                          />
+                          
+                          {/* Fallback */}
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                      </AnimatePresence>
+                    </Suspense>
+                  </Layout>
+                </HashRouter>
+              </SubscriptionProvider>
+            </ProgressProvider>
+          </CommitmentProvider>
+        </AuthProvider>
+      </UIProvider>
+    </ErrorBoundary>
   );
 }
