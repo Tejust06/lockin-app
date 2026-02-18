@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Commitment, User } from '../types';
-import { AnalyticsData, calculateAnalytics, calculateStreak, calculateDRS } from '../services/analyticsService';
+import { AnalyticsData, calculateAnalytics } from '../services/analyticsService';
 
 interface ProgressContextType {
   analytics: AnalyticsData | null;

@@ -9,10 +9,14 @@ export async function login(email: string, password: string): Promise<User> {
   // Mock delay
   await new Promise((resolve) => setTimeout(resolve, 500));
   
+  // Extract username from email (everything before @)
+  const emailParts = email.split('@');
+  const username = emailParts.length > 1 ? emailParts[0] : email;
+  
   // Mock successful login
   return {
     id: crypto.randomUUID(),
-    username: email.split('@')[0] || 'user',
+    username,
     email,
     drs: 1240,
     tier: 'TIER 2',
