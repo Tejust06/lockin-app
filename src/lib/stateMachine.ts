@@ -1,13 +1,6 @@
 import type { CommitmentState } from '../../types';
 
-// --- Valid transition map ---
-// idle → creating
-// creating → active | idle (cancel)
-// active → paused | completed | failed
-// paused → active | failed
-// completed → idle (start new)
-// failed → idle (start new)
-
+// Valid transition map
 export const VALID_TRANSITIONS: Record<CommitmentState, CommitmentState[]> = {
   idle:      ['creating'],
   creating:  ['active', 'idle'],
@@ -19,30 +12,16 @@ export const VALID_TRANSITIONS: Record<CommitmentState, CommitmentState[]> = {
 
 export const TERMINAL_STATES: CommitmentState[] = ['completed', 'failed'];
 
-/** Attempt a state transition. Throws if invalid. */
-export function transition(
-  current: CommitmentState,
-  next: CommitmentState
-): CommitmentState {
+export function transition(current: CommitmentState, next: CommitmentState): CommitmentState {
   const allowed = VALID_TRANSITIONS[current];
   if (!allowed.includes(next)) {
-    throw new Error(
-      `Invalid state transition: ${current} → ${next}. Allowed: [${allowed.join(', ')}]`
-    );
+    throw new Error(`Invalid state transition: ${current} → ${next}. Allowed: [${allowed.join(', ')}]`);
   }
   return next;
 }
 
-/** Attempt a state transition silently. Returns current state if invalid. */
-export function safeTransition(
-  current: CommitmentState,
-  next: CommitmentState
-): CommitmentState {
-  try {
-    return transition(current, next);
-  } catch {
-    return current;
-  }
+export function safeTransition(current: CommitmentState, next: CommitmentState): CommitmentState {
+  try { return transition(current, next); } catch { return current; }
 }
 
 export function canTransition(current: CommitmentState, next: CommitmentState): boolean {
