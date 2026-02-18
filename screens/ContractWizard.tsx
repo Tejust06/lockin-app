@@ -1,15 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useCommitments } from '../contexts/CommitmentContext';
+import { useUI } from '../contexts/UIContext';
 
 export default function ContractWizard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { createCommitment, setCurrentCommitment } = useCommitments();
+  const { showToast } = useUI();
   const [duration, setDuration] = useState('30');
   const [stake, setStake] = useState('10');
   const [goal, setGoal] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/bond-auth');
+    
+    if (!user) {
+      showToast('Please log in to create a commitment', 'error');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const commitment = await createCommitment(
+        user.id,
+        goal,
+        parseInt(duration, 10),
+        parseFloat(stake)
+      );
+      setCurrentCommitment(commitment);
+      showToast('Commitment created successfully!', 'success');
+      navigate('/bond-auth');
+    } catch (error) {
+      showToast('Failed to create commitment', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -28,6 +56,7 @@ export default function ContractWizard() {
             placeholder="What do you want to accomplish?"
             className="w-full px-4 py-3 bg-lockin-surface border border-lockin-border rounded-lg text-lockin-primary"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -43,6 +72,7 @@ export default function ContractWizard() {
             min="1"
             className="w-full px-4 py-3 bg-lockin-surface border border-lockin-border rounded-lg text-lockin-primary"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -56,18 +86,22 @@ export default function ContractWizard() {
             value={stake}
             onChange={(e) => setStake(e.target.value)}
             min="1"
+            step="0.01"
             className="w-full px-4 py-3 bg-lockin-surface border border-lockin-border rounded-lg text-lockin-primary"
             required
+            disabled={isLoading}
           />
         </div>
 
         <button
           type="submit"
-          className="w-full py-3 bg-lockin-accent text-white rounded-lg font-medium hover:opacity-90"
+          disabled={isLoading}
+          className="w-full py-3 bg-lockin-accent text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
         >
-          Continue
+          {isLoading ? 'Creating...' : 'Continue'}
         </button>
       </form>
     </div>
   );
 }
+

@@ -1,8 +1,43 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useCommitments } from '../contexts/CommitmentContext';
+import { CommitmentCard } from '../components/CommitmentCard';
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { commitments, getCommitments, setCurrentCommitment, deleteCommitment } = useCommitments();
+
+  useEffect(() => {
+    if (user) {
+      getCommitments(user.id);
+    }
+  }, [user, getCommitments]);
+
+  const handleSelectCommitment = useCallback(
+    (commitmentId: string) => {
+      const commitment = commitments.find((c) => c.id === commitmentId);
+      if (commitment) {
+        setCurrentCommitment(commitment);
+        if (commitment.state === 'active') {
+          navigate('/active-session');
+        }
+      }
+    },
+    [commitments, setCurrentCommitment, navigate]
+  );
+
+  const handleDeleteCommitment = useCallback(
+    async (commitmentId: string) => {
+      await deleteCommitment(commitmentId);
+    },
+    [deleteCommitment]
+  );
+
+  const activeCommitments = commitments.filter(
+    (c) => c.state === 'active' || c.state === 'paused'
+  );
 
   return (
     <div className="min-h-screen bg-lockin-bg p-6 pt-safe-top pb-safe-bottom">
@@ -21,9 +56,23 @@ export default function Home() {
 
         <div className="bg-lockin-surface border border-lockin-border rounded-xl p-6">
           <h2 className="text-lg font-semibold text-lockin-primary mb-4">Active Commitments</h2>
-          <p className="text-lockin-secondary text-center py-8">No active commitments</p>
+          {activeCommitments.length === 0 ? (
+            <p className="text-lockin-secondary text-center py-8">No active commitments</p>
+          ) : (
+            <div className="space-y-3">
+              {activeCommitments.map((commitment) => (
+                <CommitmentCard
+                  key={commitment.id}
+                  commitment={commitment}
+                  onSelect={handleSelectCommitment}
+                  onDelete={handleDeleteCommitment}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
